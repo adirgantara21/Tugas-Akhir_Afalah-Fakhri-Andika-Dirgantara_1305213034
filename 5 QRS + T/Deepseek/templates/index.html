@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MI Classification dari Fitur Fuzzy ECG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --danger: #c0392b;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border: none;
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            font-weight: 600;
+            padding: 1.2rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, var(--secondary), var(--primary));
+            border: none;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-outline-primary {
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card.norm {
+            background: linear-gradient(to right, #27ae60, #2ecc71);
+        }
+        
+        .stat-card.mi {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+        }
+        
+        .stat-card.total {
+            background: linear-gradient(to right, #3498db, #2980b9);
+        }
+        
+        .stat-card i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card p {
+            font-size: 1.1rem;
+            margin-bottom: 0;
+        }
+        
+        .mi-type-card {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            background: white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .mi-type-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        
+        .mi-type-card h5 {
+            font-weight: 600;
+            margin-bottom: 0;
+        }
+        
+        .mi-type-card .count {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .upload-area {
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background-color: rgba(236, 240, 241, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .upload-area i {
+            font-size: 4rem;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        
+        footer {
+            background: var(--primary);
+            color: white;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .table thead {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .table th {
+            font-weight: 600;
+        }
+        
+        .badge-norm {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .badge-mi {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .flashes {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+        
+        .alert {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(to right, #2c3e50, #4a6491);">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-heartbeat me-2"></i>MI Classification System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="fas fa-home me-1"></i>Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-info-circle me-1"></i>Tentang</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-book me-1"></i>Dokumentasi</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-envelope me-1"></i>Kontak</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold mb-3">MI Classification dari Fitur Fuzzy ECG</h1>
+            <p class="lead text-muted">Sistem klasifikasi infark miokard (Myocardial Infarction) menggunakan fitur fuzzy dari sinyal ECG</p>
+            <div class="d-flex justify-content-center gap-2">
+                <span class="badge bg-primary">Kecerdasan Buatan</span>
+                <span class="badge bg-success">Kesehatan Digital</span>
+                <span class="badge bg-info">Pemrosesan Sinyal</span>
+            </div>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card pulse">
+                    <div class="card-header">
+                        <i class="fas fa-upload me-2"></i>Upload Data ECG
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="upload-area">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h4>Seret & Lepas file CSV di sini</h4>
+                            <p class="text-muted">Atau klik untuk memilih file</p>
+                            <p class="small text-muted">Format file: CSV dengan kolom fitur fuzzy ECG</p>
+                        </div>
+                        
+                        <form method="POST" action="/predict" enctype="multipart/form-data" class="mt-4 d-none" id="upload-form">
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Pilih file CSV</label>
+                                <input class="form-control" type="file" id="file" name="file" accept=".csv">
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-play-circle me-2"></i>Proses Klasifikasi
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="mt-4 text-center">
+                            <p class="mb-2">Belum punya file contoh?</p>
+                            <a href="/sample" class="btn btn-outline-primary">
+                                <i class="fas fa-download me-2"></i>Download Sample Data
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-5">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2"></i>Tentang MI Classification
+                    </div>
+                    <div class="card-body">
+                        <p>Sistem ini menggunakan pendekatan fuzzy logic dan machine learning untuk mengidentifikasi berbagai jenis infark miokard (MI) dari fitur sinyal ECG.</p>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle text-success me-2"></i>Identifikasi 6 subclass MI
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle text-success me-2"></i>Akurasi tinggi dengan model terlatih
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle text-success me-2"></i>Analisis cepat dalam hitungan detik
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-list me-2"></i>Jenis MI yang Diidentifikasi
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for subclass in mi_subclasses %}
+                            <div class="col-6 mb-2">
+                                <span class="badge bg-danger w-100">{{ subclass }}</span>
+                            </div>
+                            {% endfor %}
+                            <div class="col-6 mb-2">
+                                <span class="badge bg-success w-100">NORM</span>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <span class="badge bg-secondary w-100">UNKNOWN</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-lightbulb me-2"></i>Cara Penggunaan
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Download sample data sebagai template</li>
+                            <li>Siapkan data ECG dalam format CSV</li>
+                            <li>Upload file melalui form di atas</li>
+                            <li>Tunggu proses klasifikasi</li>
+                            <li>Lihat hasil dan statistik</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="text-center py-4">
+        <div class="container">
+            <div class="d-flex justify-content-center mb-3">
+                <a href="#" class="text-light mx-3"><i class="fab fa-github fa-2x"></i></a>
+                <a href="#" class="text-light mx-3"><i class="fab fa-twitter fa-2x"></i></a>
+                <a href="#" class="text-light mx-3"><i class="fab fa-linkedin fa-2x"></i></a>
+            </div>
+            <p>&copy; 2023 MI Classification System. All rights reserved.</p>
+            <p class="mb-0">Dikembangkan untuk Penelitian Kardiologi Digital</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle file upload UI
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.querySelector('input[type="file"]');
+        const uploadForm = document.getElementById('upload-form');
+        
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                uploadArea.classList.add('d-none');
+                uploadForm.classList.remove('d-none');
+            }
+        });
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = 'rgba(52, 152, 219, 0.2)';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.backgroundColor = 'rgba(236, 240, 241, 0.5)';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = 'rgba(236, 240, 241, 0.5)';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                uploadArea.classList.add('d-none');
+                uploadForm.classList.remove('d-none');
+            }
+        });
+    </script>
+</body>
+</html>
